@@ -1,0 +1,19 @@
+{
+  "name": "bprouter",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/srinandan/bprouter.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/srinandan/bprouter/issues"
+  },
+  "homepage": "https://github.com/srinandan/bprouter#readme"
+}
