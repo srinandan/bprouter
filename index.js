@@ -50,7 +50,7 @@ module.exports.init = function(config, logger, stats) {
                             } else {
                                 debug("key not found in cache");
                                     request(lookupEndpoint + "?basePath=" + search, function(error, response, body) {
-                                        if (!err) {
+                                        if (!error) {
                                             var endpoint = JSON.parse(body);
                                             if (endpoint.endpoint) {
                                                 debug("found endpoint " + endpoint.endpoint);
@@ -70,7 +70,7 @@ module.exports.init = function(config, logger, stats) {
                                                 cache.set(search, target);
                                             }
                                         } else {
-                                            debug(err);
+                                            debug(error);
                                             debug("endpoint not found, using proxy endpoint");
                                             cache.set(search, target);
                                         }
