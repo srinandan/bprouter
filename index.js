@@ -27,11 +27,10 @@ module.exports.init = function(config, logger, stats) {
         return {
             onrequest: function(req, res, next) {
                 debug('plugin onrequest');
-                var basePath = url.parse(req.url).pathname;
+                var basePath = res.proxy.base_path;
                 var search = replaceAll(basePath, '/','_');
                 var target = res.proxy.url;
                 var queryparams = url.parse(req.url).search || '';
-
                 debug('basePath ' + basePath + ' and target ' + target);
 
                 if (disable) {
@@ -45,11 +44,14 @@ module.exports.init = function(config, logger, stats) {
                                 var parts = url.parse(value);
                                 req.targetHostname = parts.host;
                                 req.targetPort = parts.port;
-                                req.targetPath = parts.pathname + queryparams;
+                                req.targetPath = basePath + queryparams;
+                                debug("target path after cache" +req.targetPath);
                                 next();
                             } else {
                                 debug("key not found in cache");
-                                    request(lookupEndpoint + "?basePath=" + search, function(error, response, body) {
+                                var apiCall=lookupEndpoint + "?basePath=" + search;
+                                debug(apiCall);
+                                    request(apiCall, function(error, response, body) {
                                         if (!error) {
                                             var endpoint = JSON.parse(body);
                                             if (endpoint.endpoint) {
@@ -64,7 +66,8 @@ module.exports.init = function(config, logger, stats) {
                                                     req.targetHostname = parts.hostname;
                                                     req.targetPort = parts.port;
                                                 }
-                                                req.targetPath = parts.pathname + queryparams;
+                                                req.targetPath = basePath + queryparams;
+                                                debug("target path after API Call" +req.targetPath);
                                             } else {
                                                 debug("endpoint not found, using proxy endpoint");
                                                 cache.set(search, target);
