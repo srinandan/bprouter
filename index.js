@@ -55,7 +55,6 @@ module.exports.init = function(config, logger, stats) {
                                         if (!error) {
                                             var endpoint = JSON.parse(body);
                                             if (endpoint.endpoint) {
-                                                debug("found endpoint " + endpoint.endpoint);
                                                 cache.set(search, endpoint.endpoint);
                                                 var parts = url.parse(endpoint.endpoint, true);
 
@@ -68,7 +67,7 @@ module.exports.init = function(config, logger, stats) {
                                                 }else{
                                                      res.proxy.agent = httpsAgentt;
                                                 }
-                                                
+
                                                 if (parts.hostname.includes(":")) {
                                                     var result = parts.hostname.split(":");
                                                     req.targetHostname = result[0];
@@ -78,7 +77,8 @@ module.exports.init = function(config, logger, stats) {
                                                     req.targetPort = parts.port;
                                                 }
                                                 req.targetSecure=false;
-                                                req.targetPath = basePath + queryparams;
+                                                req.targetPath = res.proxy.parsedUrl.path;
+                                                debug("Query Param"+ JSON.stringify(res.proxy.parsedUrl.path) +" Over");
                                             } else {
                                                 cache.set(search, target);
                                             }
