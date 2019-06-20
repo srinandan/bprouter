@@ -3,12 +3,20 @@ const debug = require('debug')('plugin:bprouter');
 var cm = require('volos-cache-memory');
 const url = require('url');
 var request = require('request');
+var https = require('https');
+var http = require('http');
+var httpAgent = new http.Agent({
+  keepAlive: true
+})
+var httpsAgent = new https.Agent({
+  keepAlive: true
+})
 
 module.exports.init = function(config, logger, stats) {
 
-        var cachename = 'bprouter' + Math.floor(Math.random() * 100) + 1; //to ensure there is a unique cache per worker
+        var cachename = 'bprouter' + Math.floor(Math.random() * 100) + 1; 
         var lookupEndpoint = config['lookupEndpoint'];
-        var lookupCache = config['lookupCache'] || 60000; //default is 1 min
+        var lookupCache = config['lookupCache'] || 60000; 
         var disable = config['lookupDisabled'] || false;
         var cache = cm.create(cachename, {
             ttl: lookupCache
@@ -26,36 +34,41 @@ module.exports.init = function(config, logger, stats) {
 
         return {
             onrequest: function(req, res, next) {
-                debug('plugin onrequest');
-                var basePath = url.parse(req.url).pathname;
+                var basePath = res.proxy.base_path;
                 var search = replaceAll(basePath, '/','_');
                 var target = res.proxy.url;
                 var queryparams = url.parse(req.url).search || '';
 
-                debug('basePath ' + basePath + ' and target ' + target);
-
                 if (disable) {
-                    debug('plugin diabled');
                     next();
                 } else {
                     cache.get(search, function(err, value) {
                             if (value) {
-                                debug("found endpoint " + value);
-                                //change endpoint
                                 var parts = url.parse(value);
                                 req.targetHostname = parts.host;
                                 req.targetPort = parts.port;
-                                req.targetPath = parts.pathname + queryparams;
+                                req.targetPath = basePath + queryparams;
                                 next();
-                            } else {
-                                debug("key not found in cache");
-                                    request(lookupEndpoint + "?basePath=" + search, function(error, response, body) {
+                            } else {  
+                                var apiCall=lookupEndpoint + "?basePath=" + search;
+                                    request(apiCall, function(error, response, body) {
                                         if (!error) {
                                             var endpoint = JSON.parse(body);
                                             if (endpoint.endpoint) {
                                                 debug("found endpoint " + endpoint.endpoint);
                                                 cache.set(search, endpoint.endpoint);
                                                 var parts = url.parse(endpoint.endpoint, true);
+
+                                                // solution for bprouter/issues/5
+                                                
+                                                var targetSecureProxy=require('url').parse(endpoint.endpoint).protocol=="https:";                                                
+                                                if(targetSecureProxy==false){
+                                                     res.proxy.agent = httpAgent;
+
+                                                }else{
+                                                     res.proxy.agent = httpsAgentt;
+                                                }
+                                                
                                                 if (parts.hostname.includes(":")) {
                                                     var result = parts.hostname.split(":");
                                                     req.targetHostname = result[0];
@@ -64,16 +77,16 @@ module.exports.init = function(config, logger, stats) {
                                                     req.targetHostname = parts.hostname;
                                                     req.targetPort = parts.port;
                                                 }
-                                                req.targetPath = parts.pathname + queryparams;
+                                                req.targetSecure=false;
+                                                req.targetPath = basePath + queryparams;
                                             } else {
-                                                debug("endpoint not found, using proxy endpoint");
                                                 cache.set(search, target);
                                             }
                                         } else {
                                             debug(error);
-                                            debug("endpoint not found, using proxy endpoint");
                                             cache.set(search, target);
                                         }
+                                        // debug(req);
                                         next();
                                     });
                                 }
