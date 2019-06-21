@@ -26,7 +26,7 @@ Find the MG installation folder.
 
 ### Sample Configuration
 ```
-router:
+bprouter:
   lookupEndpoint: http://xxxxx/edgemicro-bprouter/endpoint
 ```
 
